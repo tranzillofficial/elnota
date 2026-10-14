@@ -1,10 +1,10 @@
 export type Customer={id:string;name:string;phone:string;address:string;notes:string};
-export type Product={id:string;name:string;price:number;barcode:string;image?:string;archived?:boolean};
+export type Product={id:string;name:string;price:number;barcode:string;image?:string;archived?:boolean;category?:string;boxQuantity?:number;itemNumber?:string;priceMissing?:boolean};
 export type Line={productId:string;name:string;price:number;quantity:number};
 export type Payment={id:string;amount:number;date:string;note:string};
 export type Invoice={id:string;number:string;customerId:string;date:string;dueDate:string;notes:string;method:'cash'|'credit'|'installment';lines:Line[];payments:Payment[];voided?:boolean;installmentPlan?:{months:number;financedAmount:number;firstDueDate:string}};
 export type Settings={businessName:string;phone:string;address:string;currency:string};
-export type Ledger={schemaVersion:1;customers:Customer[];products:Product[];invoices:Invoice[];settings:Settings;updatedAt:string};
+export type Ledger={schemaVersion:1;customers:Customer[];products:Product[];invoices:Invoice[];settings:Settings;updatedAt:string;categories?:string[];fourFieldCatalog?:boolean;catalogImports?:string[]};
 export type Account={user_id:string;email:string;business_name:string;activated_at:string|null;cloud_until:string|null};
 export const emptyLedger=(name='متجري'):Ledger=>({schemaVersion:1,customers:[],products:[],invoices:[],settings:{businessName:name,phone:'',address:'',currency:'جنيه'},updatedAt:new Date().toISOString()});
 export const money=(n:number)=>new Intl.NumberFormat('ar-EG',{maximumFractionDigits:2}).format(n);
@@ -22,6 +22,10 @@ export function validateLedger(value:unknown):value is Ledger {
  if(!value||typeof value!=='object')return false;const v=value as Ledger;
  if(v.schemaVersion!==1||!Array.isArray(v.customers)||!Array.isArray(v.products)||!Array.isArray(v.invoices)||!v.settings||typeof v.updatedAt!=='string')return false;
  if(!['businessName','phone','address','currency'].every(k=>typeof v.settings[k as keyof Settings]==='string'))return false;
+ if(v.categories!==undefined&&(!Array.isArray(v.categories)||!v.categories.every(c=>typeof c==='string')))return false;
+ if(v.catalogImports!==undefined&&(!Array.isArray(v.catalogImports)||!v.catalogImports.every(c=>typeof c==='string')))return false;
+ if(v.fourFieldCatalog!==undefined&&typeof v.fourFieldCatalog!=='boolean')return false;
+ if(!v.products.every(p=>p&&(p.category===undefined||typeof p.category==='string')&&(p.itemNumber===undefined||typeof p.itemNumber==='string')&&(p.priceMissing===undefined||typeof p.priceMissing==='boolean')&&(p.boxQuantity===undefined||Number.isInteger(p.boxQuantity)&&p.boxQuantity>0)))return false;
  if(!v.customers.every(c=>c&&['id','name','phone','address','notes'].every(k=>typeof c[k as keyof Customer]==='string')))return false;
  if(!v.products.every(p=>p&&typeof p.id==='string'&&typeof p.name==='string'&&typeof p.barcode==='string'&&finite(p.price)&&p.price>=0&&(!p.image||(typeof p.image==='string'&&/^data:image\/(jpeg|png|webp);base64,/.test(p.image)))))return false;
  if(!v.invoices.every(i=>i&&['id','number','customerId','date','dueDate','notes'].every(k=>typeof i[k as keyof Invoice]==='string')&&['cash','credit','installment'].includes(i.method)&&Array.isArray(i.lines)&&i.lines.length>0&&i.lines.every(l=>typeof l.name==='string'&&typeof l.productId==='string'&&finite(l.price)&&l.price>=0&&finite(l.quantity)&&l.quantity>0)&&Array.isArray(i.payments)&&i.payments.every(p=>typeof p.id==='string'&&typeof p.date==='string'&&typeof p.note==='string'&&finite(p.amount)&&p.amount>0)&&paid(i)<=total(i)))return false;

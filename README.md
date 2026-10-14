@@ -40,6 +40,7 @@ Local storage is per account, device and origin. Export regularly; clearing brow
 
 - Production build, TypeScript and invoice/backup unit tests.
 - Database transaction tests passed for activation restrictions, entitlement checks, revision conflicts, backup retention and cross-account isolation. Test fixtures were rolled back.
-- Browser verification is pending: the browser download was unavailable in the execution environment.
+- Published-browser checks passed: landing rendering; demo customer creation; invoice at 85 with initial payment 25; later payment 20 leaving 40; persistence after reload. No application error was observed. Mobile viewport and offline reload could not be directly exercised because the local browser download was unavailable.
+- A publication preview is included in `docs/preview.jpg`.
 
 Free infrastructure has finite capacity and may pause when inactive. Monitor usage and upgrade this independent backend as revenue grows. Direct thermal printing, governmental e-invoicing, automated reminders and team sharing are outside this release.

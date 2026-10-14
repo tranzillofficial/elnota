@@ -50,3 +50,11 @@ Free infrastructure has finite capacity and may pause when inactive. Monitor usa
 Credit invoices have no due date. New installment invoices finance the remaining balance after the initial payment over 1–120 whole months; the first payment is due one calendar month later. Month-end dates clamp to the last valid day, while subsequent dates remain anchored to the original invoice day. The last installment absorbs rounding cents. Overdue totals count only unpaid installments already past due. Product quantities use whole units with a step of one.
 
 WhatsApp actions prepare a local PNG image with amounts, payments and installment schedule. A second explicit click shares the prepared image through the system share sheet where file sharing is supported; the user chooses WhatsApp and the recipient. Other browsers provide a PNG download for manual attachment. No text-only wa.me payload or public customer-data/image URL is used.
+
+## Barcode / QR camera scanning
+
+On the Products screen and in New Invoice, tap the scan icon beside product search to scan a barcode or a QR code containing a product identifier. Registered products can be found with their saved prices; a matched scan in a new invoice adds the product directly. Unknown codes open the new-product form with the identifier filled in, so the business owner can enter a name and price before saving. A separate scan action is available inside the product form.
+
+Camera access requires a secure origin (HTTPS or localhost) and browser permission. The scanner uses a bundled client-side decoder (html5-qrcode with ZXing fallback) to support common Android and iOS browsers without uploading video frames to a server. A manual code input remains available if the camera is denied or unavailable. A scanned identifier is **not** an external product-database lookup: products not already stored in the ledger must be registered by the user.
+
+Test on physical devices (iOS Safari and Android Chrome) with the specific EAN/UPC, Code 128, and QR labels used by the business before relying on it at checkout.

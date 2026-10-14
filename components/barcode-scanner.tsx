@@ -111,13 +111,13 @@ export function BarcodeScanner({ onScan, onClose }: { onScan: (code: string) => 
       <div className="scanner-preview">
         <video ref={videoRef} playsInline muted autoPlay aria-label="معاينة الكاميرا الخلفية"/>
         <div className="scanner-guide" aria-hidden="true"/>
-        {!active && <div className="scanner-loading"><Camera size={24}/><span>جارٍ تجهيز الماسح…</span></div>}
+        {!active && !error && <div className="scanner-loading"><Camera size={24}/><span>جارٍ تجهيز الماسح…</span></div>}
       </div>
       {error && <p className="notice error" role="alert">{error}</p>}
       <div className="scanner-manual">
         <label htmlFor="scanner-manual-code">أو اكتب رقم الباركود / QR يدويًا</label>
         <div>
-          <input id="scanner-manual-code" dir="ltr" autoComplete="off" inputMode="text" maxLength={100} value={manual} placeholder="رقم أو كود المنتج" onChange={event => setManual(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') submitManual(); }}/>
+          <input id="scanner-manual-code" dir="ltr" autoComplete="off" inputMode="text" maxLength={100} value={manual} placeholder="رقم أو كود المنتج" onChange={event => setManual(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); submitManual(); } }}/>
           <button className="button" type="button" onClick={submitManual}>بحث بالكود</button>
         </div>
       </div>

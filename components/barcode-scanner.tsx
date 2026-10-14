@@ -1,15 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Camera, ScanLine, X } from 'lucide-react';
+import type { Html5Qrcode } from 'html5-qrcode';
 import { normalizeScannedCode } from '@/lib/barcode';
 
-type DetectedBarcode = { rawValue?: string };
-type Detector = { detect: (video: HTMLVideoElement) => Promise<DetectedBarcode[]> };
-type DetectorConstructor = new () => Detector;
-
 export function BarcodeScanner({ onScan, onClose }: { onScan: (code: string) => void; onClose: () => void }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const scannerId = 'elnota-scanner-' + useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const onScanRef = useRef(onScan);
   const [manual, setManual] = useState('');
   const [error, setError] = useState('');
@@ -17,81 +14,46 @@ export function BarcodeScanner({ onScan, onClose }: { onScan: (code: string) => 
   onScanRef.current = onScan;
 
   useEffect(() => {
-    let stopped = false;
-    let frame = 0;
-    let stream: MediaStream | null = null;
+    let disposed = false;
+    let scanner: Html5Qrcode | null = null;
+    const cleanup = async () => {
+      if (!scanner) return;
+      try { if (scanner.isScanning) await scanner.stop(); } catch { /* The camera may already be stopped. */ }
+      try { scanner.clear(); } catch { /* The element may have been removed. */ }
+    };
 
     async function openCamera() {
-      const BarcodeDetectorClass = (globalThis as typeof globalThis & {
-        BarcodeDetector?: DetectorConstructor;
-      }).BarcodeDetector;
-
-      if (!BarcodeDetectorClass) {
-        setError('المتصفح ده مش بيدعم قراءة الباركود بالكاميرا. اكتب الكود يدويًا، أو استخدم متصفح بيدعم BarcodeDetector.');
-        return;
-      }
       if (!navigator.mediaDevices?.getUserMedia) {
-        setError('الكاميرا غير متاحة. افتح التطبيق من اتصال HTTPS واسمح للمتصفح باستخدام الكاميرا.');
+        setError('الكاميرا غير متاحة. افتح التطبيق على HTTPS واسمح للمتصفح باستخدام الكاميرا.');
         return;
       }
       try {
-        const detector = new BarcodeDetectorClass();
-        const media = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: { facingMode: { ideal: 'environment' } },
-        });
-        stream = media;
-        if (stopped) {
-          media.getTracks().forEach(track => track.stop());
-          return;
-        }
-        const video = videoRef.current;
-        if (!video) return;
-        video.srcObject = media;
-        await video.play();
-        if (stopped) return;
+        // Loaded only when the scanner opens. The built-in ZXing fallback also works
+        // in browsers without the experimental native BarcodeDetector API (e.g. iOS).
+        const { Html5Qrcode } = await import('html5-qrcode');
+        if (disposed) return;
+        scanner = new Html5Qrcode(scannerId, { verbose: false, useBarCodeDetectorIfSupported: true });
+        await scanner.start({ facingMode: 'environment' }, { fps: 10 }, decodedText => {
+          if (disposed) return;
+          const code = normalizeScannedCode(decodedText);
+          if (!code) return;
+          disposed = true;
+          onScanRef.current(code);
+        }, () => { /* No barcode detected in this frame. */ });
+        if (disposed) { await cleanup(); return; }
         setActive(true);
-        let detecting = false;
-
-        const loop = async () => {
-          if (stopped) return;
-          if (!detecting && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-            detecting = true;
-            try {
-              const codes = await detector.detect(video);
-              const code = codes.map(item => normalizeScannedCode(item.rawValue || '')).find(Boolean);
-              if (code && !stopped) {
-                stopped = true;
-                media.getTracks().forEach(track => track.stop());
-                onScanRef.current(code);
-                return;
-              }
-            } catch {
-              // A frame can fail detection without ending the camera session.
-            } finally {
-              detecting = false;
-            }
-          }
-          frame = requestAnimationFrame(loop);
-        };
-        frame = requestAnimationFrame(loop);
       } catch (cause) {
-        if (stopped) return;
+        if (disposed) { await cleanup(); return; }
         const name = (cause as Error)?.name;
-        setError(name === 'NotAllowedError'
+        setError(name === 'NotAllowedError' || String(cause).includes('Permission')
           ? 'اسمح للتطبيق باستخدام الكاميرا من إعدادات المتصفح وحاول تاني.'
           : 'تعذر تشغيل الكاميرا. تأكد إنها مش مستخدمة في تطبيق تاني.');
       }
     }
 
     void openCamera();
-    return () => {
-      stopped = true;
-      cancelAnimationFrame(frame);
-      stream?.getTracks().forEach(track => track.stop());
-      if (videoRef.current) videoRef.current.srcObject = null;
-    };
-  }, []);
+    return () => { disposed = true; void cleanup(); };
+  }, [scannerId]);
 
   const submitManual = () => {
     const code = normalizeScannedCode(manual);
@@ -109,8 +71,7 @@ export function BarcodeScanner({ onScan, onClose }: { onScan: (code: string) => 
         <button type="button" className="icon-button" aria-label="إغلاق الماسح" onClick={onClose}><X size={22}/></button>
       </div>
       <div className="scanner-preview">
-        <video ref={videoRef} playsInline muted autoPlay aria-label="معاينة الكاميرا الخلفية"/>
-        <div className="scanner-guide" aria-hidden="true"/>
+        <div id={scannerId} className="scanner-reader"/>
         {!active && !error && <div className="scanner-loading"><Camera size={24}/><span>جارٍ تجهيز الماسح…</span></div>}
       </div>
       {error && <p className="notice error" role="alert">{error}</p>}

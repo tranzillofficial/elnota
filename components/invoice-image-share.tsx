@@ -1,0 +1,11 @@
+'use client';
+import { useEffect,useState } from 'react';
+import { Download,MessageCircle,X } from 'lucide-react';
+import type { Invoice,Ledger } from '@/lib/model';
+import { createInvoiceImage } from '@/lib/invoice-image';
+export function InvoiceImageShare({invoice,ledger,onClose}:{invoice:Invoice;ledger:Ledger;onClose:()=>void}){
+ const [file,setFile]=useState<File|null>(null);const [url,setUrl]=useState('');const [error,setError]=useState('');const [busy,setBusy]=useState(false);const [supported,setSupported]=useState(false);
+ useEffect(()=>{let alive=true;let objectUrl='';createInvoiceImage(invoice,ledger).then(image=>{if(!alive)return;objectUrl=URL.createObjectURL(image);setFile(image);setUrl(objectUrl);setSupported(Boolean(navigator.canShare?.({files:[image]})))}).catch(e=>{if(alive)setError(e.message)});return()=>{alive=false;if(objectUrl)URL.revokeObjectURL(objectUrl)}},[invoice,ledger]);
+ async function share(){if(!file)return;setBusy(true);setError('');try{await navigator.share({files:[file]})}catch(e){if((e as Error).name!=='AbortError')setError('تعذرت المشاركة. حمّل الصورة ثم أرفقها في محادثة العميل على واتساب.')}finally{setBusy(false)}}
+ return <div className="modal-overlay image-share-overlay" onClick={onClose}><section className="receipt-modal image-share-modal" role="dialog" aria-modal="true" aria-labelledby="image-share-title" onClick={e=>e.stopPropagation()}><div className="modal-actions"><button className="icon-button" aria-label="إغلاق مشاركة الصورة" onClick={onClose}><X size={22}/></button><h2 id="image-share-title">الفاتورة كصورة</h2></div>{error&&<p className="notice error" role="alert">{error}</p>}{!url&&!error?<p role="status">جارٍ تجهيز صورة الفاتورة…</p>:url&&<><p>{supported?'اضغط مشاركة الصورة، واختار واتساب ثم العميل من قائمة المشاركة.':'حمّل الصورة ثم أرفقها في محادثة العميل على واتساب.'}</p><div className="backup-actions">{supported&&<button className="button" disabled={busy} onClick={share}><MessageCircle size={18}/>{busy?'جارٍ المشاركة…':'مشاركة الصورة إلى واتساب'}</button>}<a className="button secondary" href={url} download={file?.name}><Download size={18}/>تحميل صورة الفاتورة</a></div><img className="invoice-image-preview" src={url} alt="معاينة صورة الفاتورة"/></>}</section></div>
+}

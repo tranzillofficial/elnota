@@ -44,3 +44,9 @@ Local storage is per account, device and origin. Export regularly; clearing brow
 - A publication preview is included in `docs/preview.jpg`.
 
 Free infrastructure has finite capacity and may pause when inactive. Monitor usage and upgrade this independent backend as revenue grows. Direct thermal printing, governmental e-invoicing, automated reminders and team sharing are outside this release.
+
+## Invoice payment behavior
+
+Credit invoices have no due date. New installment invoices finance the remaining balance after the initial payment over 1–120 whole months; the first payment is due one calendar month later. Month-end dates clamp to the last valid day, while subsequent dates remain anchored to the original invoice day. The last installment absorbs rounding cents. Overdue totals count only unpaid installments already past due. Product quantities use whole units with a step of one.
+
+WhatsApp actions prepare a local PNG image with amounts, payments and installment schedule. A second explicit click shares the prepared image through the system share sheet where file sharing is supported; the user chooses WhatsApp and the recipient. Other browsers provide a PNG download for manual attachment. No text-only wa.me payload or public customer-data/image URL is used.

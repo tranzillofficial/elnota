@@ -1,0 +1,29 @@
+export type Customer={id:string;name:string;phone:string;address:string;notes:string};
+export type Product={id:string;name:string;price:number;barcode:string;image?:string;archived?:boolean};
+export type Line={productId:string;name:string;price:number;quantity:number};
+export type Payment={id:string;amount:number;date:string;note:string};
+export type Invoice={id:string;number:string;customerId:string;date:string;dueDate:string;notes:string;method:'cash'|'credit'|'installment';lines:Line[];payments:Payment[];voided?:boolean};
+export type Settings={businessName:string;phone:string;address:string;currency:string};
+export type Ledger={schemaVersion:1;customers:Customer[];products:Product[];invoices:Invoice[];settings:Settings;updatedAt:string};
+export type Account={user_id:string;email:string;business_name:string;activated_at:string|null;cloud_until:string|null};
+export const emptyLedger=(name='متجري'):Ledger=>({schemaVersion:1,customers:[],products:[],invoices:[],settings:{businessName:name,phone:'',address:'',currency:'جنيه'},updatedAt:new Date().toISOString()});
+export const money=(n:number)=>new Intl.NumberFormat('ar-EG',{maximumFractionDigits:2}).format(n);
+export const total=(invoice:Invoice)=>Math.round(invoice.lines.reduce((sum,line)=>sum+line.price*line.quantity,0)*100)/100;
+export const paid=(invoice:Invoice)=>Math.round(invoice.payments.reduce((sum,p)=>sum+p.amount,0)*100)/100;
+export const remaining=(invoice:Invoice)=>Math.max(0,Math.round((total(invoice)-paid(invoice))*100)/100);
+export const id=()=>crypto.randomUUID();
+export const today=()=>new Date().toLocaleDateString('en-CA');
+const finite=(v:unknown)=>typeof v==='number'&&Number.isFinite(v);
+export function validateLedger(value:unknown):value is Ledger {
+ if(!value||typeof value!=='object')return false;const v=value as Ledger;
+ if(v.schemaVersion!==1||!Array.isArray(v.customers)||!Array.isArray(v.products)||!Array.isArray(v.invoices)||!v.settings||typeof v.updatedAt!=='string')return false;
+ if(!['businessName','phone','address','currency'].every(k=>typeof v.settings[k as keyof Settings]==='string'))return false;
+ if(!v.customers.every(c=>c&&['id','name','phone','address','notes'].every(k=>typeof c[k as keyof Customer]==='string')))return false;
+ if(!v.products.every(p=>p&&typeof p.id==='string'&&typeof p.name==='string'&&typeof p.barcode==='string'&&finite(p.price)&&p.price>=0&&(!p.image||(typeof p.image==='string'&&/^data:image\/(jpeg|png|webp);base64,/.test(p.image)))))return false;
+ if(!v.invoices.every(i=>i&&['id','number','customerId','date','dueDate','notes'].every(k=>typeof i[k as keyof Invoice]==='string')&&['cash','credit','installment'].includes(i.method)&&Array.isArray(i.lines)&&i.lines.length>0&&i.lines.every(l=>typeof l.name==='string'&&typeof l.productId==='string'&&finite(l.price)&&l.price>=0&&finite(l.quantity)&&l.quantity>0)&&Array.isArray(i.payments)&&i.payments.every(p=>typeof p.id==='string'&&typeof p.date==='string'&&typeof p.note==='string'&&finite(p.amount)&&p.amount>0)&&paid(i)<=total(i)))return false;
+ if([v.customers,v.products,v.invoices].some(items=>new Set(items.map(i=>i.id)).size!==items.length))return false;
+ return v.invoices.every(i=>v.customers.some(c=>c.id===i.customerId));
+}
+export function addPayment(invoice:Invoice,amount:number,note=''):Invoice {if(invoice.voided||!finite(amount)||amount<=0||amount>remaining(invoice))throw new Error('المبلغ يجب أن يكون أكبر من صفر ولا يتجاوز المتبقي');return {...invoice,payments:[...invoice.payments,{id:id(),amount:Math.round(amount*100)/100,date:today(),note}]}}
+export function invoiceText(invoice:Invoice,customer:Customer,settings:Settings){return `${settings.businessName}\nفاتورة ${invoice.number}\nالعميل: ${customer.name}\nالتاريخ: ${invoice.date}\n${invoice.lines.map(l=>`${l.name} × ${l.quantity}: ${money(l.quantity*l.price)} ${settings.currency}`).join('\n')}\nالإجمالي: ${money(total(invoice))} ${settings.currency}\nالمدفوع: ${money(paid(invoice))} ${settings.currency}\nالمتبقي: ${money(remaining(invoice))} ${settings.currency}\n${invoice.dueDate?'الاستحقاق: '+invoice.dueDate:''}\n${invoice.notes}`}
+export function demoLedger():Ledger {const x=emptyLedger('متجر النوتة');x.customers=[{id:'c1',name:'أحمد محمد',phone:'01012345678',address:'القاهرة',notes:''},{id:'c2',name:'محمد علي',phone:'01098765432',address:'',notes:''},{id:'c3',name:'مصطفى حسن',phone:'01123456789',address:'',notes:''}];x.products=[{id:'p1',name:'زيت طبخ 1 لتر',price:85,barcode:'622100001'},{id:'p2',name:'أرز مصري 1 كجم',price:32,barcode:'622100002'},{id:'p3',name:'سكر 1 كجم',price:28,barcode:'622100003'}];x.invoices=[{id:'i1',number:'INV-001',customerId:'c1',date:today(),dueDate:today(),notes:'',method:'credit',lines:[{productId:'p1',name:'زيت طبخ 1 لتر',quantity:2,price:85},{productId:'p2',name:'أرز مصري 1 كجم',quantity:3,price:32},{productId:'p3',name:'سكر 1 كجم',quantity:1,price:28}],payments:[{id:'pay1',amount:100,date:today(),note:'دفعة أولى'}]}];return x}

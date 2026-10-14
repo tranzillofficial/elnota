@@ -1,0 +1,2 @@
+import type { MetadataRoute } from 'next';
+export default function manifest():MetadataRoute.Manifest{return {name:'النوتة — ElNota',short_name:'النوتة',description:'حساباتك في نوتة واحدة',start_url:'/dashboard',scope:'/',display:'standalone',background_color:'#f7faf8',theme_color:'#087b53',lang:'ar',dir:'rtl',icons:[{src:'/icon-192.png',sizes:'192x192',type:'image/png'},{src:'/icon-512.png',sizes:'512x512',type:'image/png',purpose:'maskable'}],shortcuts:[{name:'فاتورة جديدة',url:'/dashboard?tab=invoice'},{name:'العملاء',url:'/dashboard?tab=customers'}]}}

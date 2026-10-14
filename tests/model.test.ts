@@ -1,0 +1,7 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {demoLedger,total,paid,remaining,addPayment,validateLedger,invoiceText} from '../lib/model.ts';
+test('partial payments update the balance without changing invoice totals',()=>{const l=demoLedger();const i=l.invoices[0];assert.equal(total(i),294);assert.equal(paid(i),100);assert.equal(remaining(i),194);const updated=addPayment(i,50);assert.equal(total(updated),294);assert.equal(remaining(updated),144);assert.equal(i.payments.length,1);assert.equal(updated.payments.length,2)});
+test('rejects negative, zero, non-finite and overpayment amounts',()=>{const i=demoLedger().invoices[0];for(const amount of [-1,0,NaN,Infinity,195])assert.throws(()=>addPayment(i,amount));assert.throws(()=>addPayment({...i,voided:true},10))});
+test('backup validator rejects broken references, duplicate ids and negative prices',()=>{const l=demoLedger();assert.equal(validateLedger(l),true);assert.equal(validateLedger({...l,customers:[]}),false);assert.equal(validateLedger({...l,customers:[...l.customers,l.customers[0]]}),false);assert.equal(validateLedger({...l,products:[{...l.products[0],price:-1}]}),false);assert.equal(validateLedger({...l,products:[{...l.products[0],image:'javascript:alert(1)'}]}),false)});
+test('shared invoice reflects current payment balance',()=>{const l=demoLedger();const i=addPayment(l.invoices[0],50);const text=invoiceText(i,l.customers[0],l.settings);assert.ok(text.includes('المتبقي:'));assert.ok(text.includes(new Intl.NumberFormat('ar-EG').format(144)))});

@@ -60,6 +60,14 @@ Camera access requires a secure origin (HTTPS or localhost) and browser permissi
 Test on physical devices (iOS Safari and Android Chrome) with the specific EAN/UPC, Code 128, and QR labels used by the business before relying on it at checkout.
 # Account-specific catalog imports
 
+## Offline-first operation and synchronization
+
+The dashboard hydrates the last locally authenticated account directly from IndexedDB before attempting any network calls. First online activation saves an empty local ledger too. Signing in explicitly switches the local account pointer; signing out removes it. Cached local data does not grant access to cloud APIs: synchronization checks the current server session and existing Cloud entitlement.
+
+Settings provides two-way “مزامنة الآن”, optional automatic synchronization while the app is open, the last successful sync time, and a pending-local-changes indicator. A canonical SHA-256 business-data fingerprint and server revision distinguish local-only edits, remote-only edits, and divergent edits; images and local timestamps do not count as cloud changes. Divergent copies require an explicit choice with record counts, not an automatic overwrite. Compare-and-swap still guards server uploads, and the chosen cloud revision is rechecked before resolving a conflict. Three local recovery snapshots are retained before replacing or uploading data; server backups retain previous uploads. Matching local product photos survive downloads.
+
+The build generates both `public/offline-assets.json` and `public/sw.js` from `scripts/service-worker.js`. Each build gets a distinct cache. HTML is served immediately from its matching cache; updates install only after their assets and app shell are ready. Account APIs and authentication requests are never cached. Open and prepare the installed app once online on each device before using it offline. No background sync is promised while the app is closed, and installation does not transfer another device's local data.
+
 Catalog imports can carry a `categoryMap` to merge or rename categories on existing devices without changing product IDs, prices, quantities, archive status or invoices. Mappings also repair import markers written by older clients.
 
 Settings includes installation and offline preparation controls. Chromium uses the browser installation prompt; iOS shows Add to Home Screen instructions. The build generates `public/offline-assets.json` so the service worker caches all static app assets, including lazy scanner chunks, before reporting readiness. After an online login on the same device, the last local account can reopen offline without trying to refresh its network session. Signing out clears that offline identity. IndexedDB remains the source of local customer, product and invoice data; installation on a different device or an isolated iOS app container requires restoring an exported backup.

@@ -1,6 +1,10 @@
-import { readdir,writeFile } from 'node:fs/promises';
+import { readdir,readFile,writeFile } from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 const files=await readdir('.next/static',{recursive:true});
 const assets=files.filter(p=>/\.(js|css|woff2?)$/.test(p)).map(p=>'/_next/static/'+p.replaceAll('\\','/'));
 if(!assets.length)throw new Error('No offline assets generated');
 await writeFile('public/offline-assets.json',JSON.stringify(assets));
+const version=createHash('sha256').update(JSON.stringify(assets)).digest('hex').slice(0,16);
+const worker=await readFile('scripts/service-worker.js','utf8');
+await writeFile('public/sw.js',worker.replace('__CACHE_VERSION__',version));
 console.log(`Prepared ${assets.length} offline assets`);

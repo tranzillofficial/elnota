@@ -1,0 +1,5 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {cloudStatus,backupDue,BACKUP_INTERVAL} from '../lib/cloud-subscription.ts';
+test('renewal alert starts exactly five days before expiry for monthly or yearly subscriptions',()=>{const now=Date.parse('2026-10-18T00:00:00Z');assert.equal(cloudStatus(new Date(now+5*BACKUP_INTERVAL+1).toISOString(),now).expiring,false);assert.deepEqual(cloudStatus(new Date(now+5*BACKUP_INTERVAL).toISOString(),now),{active:true,expiring:true,expired:false,days:5});assert.equal(cloudStatus(new Date(now+1).toISOString(),now).days,1);assert.equal(cloudStatus(new Date(now).toISOString(),now).expired,true);assert.equal(cloudStatus(null,now).active,false)});
+test('daily backup is due initially and after 24 hours including missed offline intervals',()=>{const now=Date.parse('2026-10-18T00:00:00Z');assert.equal(backupDue(null,now),true);assert.equal(backupDue(new Date(now-BACKUP_INTERVAL+1).toISOString(),now),false);assert.equal(backupDue(new Date(now-BACKUP_INTERVAL).toISOString(),now),true);assert.equal(backupDue(new Date(now-3*BACKUP_INTERVAL).toISOString(),now),true)});

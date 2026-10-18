@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
+import {invoiceBusinessName} from '@/lib/customer-invoices';
 import {Printer} from 'lucide-react';
 import type {Invoice,Ledger} from '@/lib/model';
 import {supabase} from '@/lib/supabase';
@@ -7,7 +8,7 @@ import {selectPrinter,connectPrinter,thermalReceipt,sendThermal} from '@/lib/the
 export function InvoicePrint({invoice,ledger,userId}:{invoice:Invoice;ledger:Ledger;userId:string}){
  const [paper,setPaper]=useState('80');const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [name,setName]=useState('');const printer=useRef<Awaited<ReturnType<typeof connectPrinter>>|null>(null);
  useEffect(()=>()=>{printer.current?.server.disconnect();document.body.removeAttribute('data-invoice-paper')},[]);
- async function authorized(){if(!supabase||!navigator.onLine)throw new Error('اتصل بالإنترنت للتحقق من تفعيل الطباعة لحسابك.');const {data,error}=await supabase.from('elnota_accounts').select('printing_enabled,activated_at').eq('user_id',userId).single();if(error)throw error;if(!data?.printing_enabled||!data.activated_at)throw new Error('الطباعة غير مفعلة لهذا الحساب. تواصل مع الإدارة.');}
+ async function authorized(){if(!invoiceBusinessName(ledger.settings.businessName))throw new Error('حدد اسم المتجر على الفاتورة أولًا.');if(!supabase||!navigator.onLine)throw new Error('اتصل بالإنترنت للتحقق من تفعيل الطباعة لحسابك.');const {data,error}=await supabase.from('elnota_accounts').select('printing_enabled,activated_at').eq('user_id',userId).single();if(error)throw error;if(!data?.printing_enabled||!data.activated_at)throw new Error('الطباعة غير مفعلة لهذا الحساب. تواصل مع الإدارة.');}
  async function systemPrint(){document.body.removeAttribute('data-invoice-paper');setBusy(true);setError('');try{await authorized();await document.fonts.ready;document.body.dataset.invoicePaper=paper;window.addEventListener('afterprint',()=>document.body.removeAttribute('data-invoice-paper'),{once:true});window.print()}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
  async function pair(){setError('');setBusy(true);try{const choice=selectPrinter();const device=await choice;printer.current?.server.disconnect();printer.current=await connectPrinter(device);setName(device.name||'طابعة BLE')}catch(e){if((e as Error).name!=='NotFoundError')setError((e as Error).message)}finally{setBusy(false)}}
  async function direct(){setBusy(true);setError('');try{await authorized();if(!printer.current?.server.connected){setName('');throw new Error('اتصل بالطابعة أولًا.')}await sendThermal(printer.current.characteristic,await thermalReceipt(invoice,ledger,paper==='58'?384:576));setError('تم إرسال الفاتورة للطابعة.')}catch(e){setError((e as Error).message+' لا تكرر الإرسال قبل مراجعة الطابعة لتجنب نسخة مكررة.')}finally{setBusy(false)}}

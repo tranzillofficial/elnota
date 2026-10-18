@@ -1,3 +1,4 @@
+import {invoiceBusinessName} from './customer-invoices.ts';
 import {type Invoice,type Ledger,money,total,paid,remaining,installmentSchedule} from './model.ts';
 export function rasterStripe(rgba:Uint8ClampedArray,width:number,height:number):Uint8Array {
  if(width%8||rgba.length!==width*height*4||width<8||height<1||height>256)throw new Error('Invalid raster size');
@@ -6,6 +7,7 @@ export function rasterStripe(rgba:Uint8ClampedArray,width:number,height:number):
  return data;
 }
 export async function thermalReceipt(invoice:Invoice,ledger:Ledger,width:384|576){
+ if(!invoiceBusinessName(ledger.settings.businessName))throw new Error('حدد اسم المتجر من بيانات النشاط أولًا.');
  await document.fonts.ready;const canvas=document.createElement('canvas');canvas.width=width;const ctx=canvas.getContext('2d');if(!ctx)throw new Error('تعذر تجهيز الفاتورة');
  const rows:{text:string;bold:boolean}[]=[];const size=width===384?22:26;
  function line(value:string,bold=false){ctx!.font=`${bold?'bold ':''}${size}px Tahoma, Arial, sans-serif`;for(const paragraph of value.split('\n')){let row='';for(const char of paragraph){if(ctx!.measureText(row+char).width>width-24){rows.push({text:row,bold});row=''}row+=char}rows.push({text:row,bold})}}

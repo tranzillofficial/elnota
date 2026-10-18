@@ -1,6 +1,8 @@
+import {invoiceBusinessName} from './customer-invoices.ts';
 import { type Invoice,type Ledger,money,total,paid,remaining,installmentSchedule } from './model';
 /** Render exact ledger amounts locally; no invoice/customer data leaves the device. */
 export async function createInvoiceImage(invoice:Invoice,ledger:Ledger):Promise<File>{
+ if(!invoiceBusinessName(ledger.settings.businessName))throw new Error('حدد اسم المتجر من بيانات النشاط أولًا.');
  await document.fonts.ready;
  const canvas=document.createElement('canvas');canvas.width=1000;
  const ctx=canvas.getContext('2d');if(!ctx)throw new Error('تعذر تجهيز الصورة');

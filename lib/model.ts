@@ -5,7 +5,7 @@ export type Payment={id:string;amount:number;date:string;note:string};
 export type Invoice={id:string;number:string;customerId:string;date:string;dueDate:string;notes:string;method:'cash'|'credit'|'installment';entryMode?:'products'|'amount';lines:Line[];payments:Payment[];voided?:boolean;installmentPlan?:{months:number;financedAmount:number;firstDueDate:string}};
 export type Settings={businessName:string;phone:string;address:string;currency:string};
 export type Ledger={schemaVersion:1;customers:Customer[];products:Product[];invoices:Invoice[];settings:Settings;updatedAt:string;categories?:string[];fourFieldCatalog?:boolean;catalogImports?:string[]};
-export type Account={user_id:string;email:string;business_name:string;activated_at:string|null;cloud_until:string|null};
+export type Account={user_id:string;email:string;business_name:string;activated_at:string|null;cloud_until:string|null;printing_enabled?:boolean};
 export const emptyLedger=(name='متجري'):Ledger=>({schemaVersion:1,customers:[],products:[],invoices:[],settings:{businessName:name,phone:'',address:'',currency:'جنيه'},updatedAt:new Date().toISOString()});
 export const money=(n:number)=>new Intl.NumberFormat('ar-EG',{maximumFractionDigits:2}).format(n);
 export const total=(invoice:Invoice)=>Math.round(invoice.lines.reduce((sum,line)=>sum+line.price*line.quantity,0)*100)/100;

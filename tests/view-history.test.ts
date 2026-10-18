@@ -1,0 +1,20 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {stripTypeScriptTypes} from 'node:module';
+import vm from 'node:vm';
+test('customer form, nested dialogs, cancel and forward stay in the app until accounts root',()=>{
+ const slots:any[]=[];let cursor=0;const pending:(()=>void)[]=[];const listeners=new Set<(e:any)=>void>();
+ const stack:any[]=[{external:true},{}];let position=1;let restored='';let key='accounts';
+ const useRef=(value:unknown)=>{const i=cursor++;return slots[i]??(slots[i]={current:value})};
+ const useEffect=(fn:()=>void,deps:unknown[])=>{const i=cursor++;const old=slots[i];if(!old||deps.some((v,j)=>v!==old[j])){slots[i]=deps;pending.push(fn)}};
+ const history={get state(){return stack[position]},replaceState(s:any){stack[position]=s},pushState(s:any){stack.splice(position+1);stack.push(s);position++},go(delta:number){position+=delta;for(const fn of listeners)fn({state:stack[position]})}};
+ const source=stripTypeScriptTypes(readFileSync(new URL('../components/use-view-history.ts',import.meta.url),'utf8')).replace(/import[^;]+;/,'').replace('export function','function');
+ const context=vm.createContext({useRef,useEffect,history,window:{addEventListener:(_event:string,fn:any)=>listeners.add(fn),removeEventListener:(_event:string,fn:any)=>listeners.delete(fn)}});
+ vm.runInContext(source+';globalThis.hook=useViewHistory',context);
+ const render=(next:string)=>{key=next;cursor=0;context.hook(next,next,'accounts','accounts',(v:string)=>{restored=v;key=v},true);while(pending.length)pending.shift()!()};
+ render('accounts');assert.equal(stack.length,2);render('add-customer');assert.equal(stack.length,3);history.go(-1);render(key);assert.equal(restored,'accounts');assert.equal(position,1);
+ history.go(1);render(key);assert.equal(restored,'add-customer');render('accounts');render(key);assert.equal(position,1);
+ render('customer');render('edit-customer');history.go(-1);render(key);assert.equal(restored,'customer');history.go(-1);render(key);assert.equal(restored,'accounts');
+ render('invoices');render('receipt');render('share');history.go(-1);render(key);assert.equal(restored,'receipt');history.go(-1);render(key);assert.equal(restored,'invoices');history.go(-1);render(key);assert.equal(restored,'accounts');history.go(-1);assert.equal(position,0);
+});

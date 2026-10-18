@@ -1,5 +1,5 @@
 import {invoiceBusinessName} from './customer-invoices.ts';
-import { type Invoice,type Ledger,money,total,paid,remaining,installmentSchedule } from './model';
+import { type Invoice,type Ledger,money,total,paid,remaining,customerTotals,installmentSchedule } from './model';
 /** Render exact ledger amounts locally; no invoice/customer data leaves the device. */
 export async function createInvoiceImage(invoice:Invoice,ledger:Ledger):Promise<File>{
  if(!invoiceBusinessName(ledger.settings.businessName))throw new Error('حدد اسم المتجر من بيانات النشاط أولًا.');
@@ -19,7 +19,7 @@ export async function createInvoiceImage(invoice:Invoice,ledger:Ledger):Promise<
  if(invoice.entryMode==='amount'){text(invoice.lines[0].name,942,880,29,true);pair('قيمة المبلغ',money(total(invoice))+' '+ledger.settings.currency,true)}else{
  row(['المنتج','الكمية','سعر الوحدة','الإجمالي'],64,true);
  for(const line of invoice.lines){const height=Math.max(70,wrap(line.name,395,25).length*38+32);row([line.name,String(line.quantity),money(line.price),money(line.price*line.quantity)],height)}}
- y+=26;pair('الإجمالي',money(total(invoice))+' '+ledger.settings.currency,true);pair('المدفوع',money(paid(invoice))+' '+ledger.settings.currency);pair('المتبقي',money(remaining(invoice))+' '+ledger.settings.currency,true);y+=12;rule();
+ y+=26;pair('الإجمالي',money(total(invoice))+' '+ledger.settings.currency,true);pair('المدفوع المسجل بالفاتورة',money(paid(invoice))+' '+ledger.settings.currency);pair('المتبقي على حساب العميل',money(customerTotals(ledger,invoice.customerId).remaining)+' '+ledger.settings.currency,true);y+=12;rule();
  const schedule=installmentSchedule(invoice);if(schedule.length){text('جدول الأقساط — '+schedule.length+' شهر',942,880,29,true);text('أول استحقاق: '+schedule[0].date,942,880,25);y+=8;row(['القسط','', 'الاستحقاق','القيمة'],64,true,true);for(const entry of schedule)row(['القسط '+entry.number,'',entry.date,money(entry.amount)+' جنيه'],70,false,true);y+=22;rule()}else if(invoice.method==='installment'&&invoice.dueDate)text('أول استحقاق: '+invoice.dueDate,942,880,25);
  if(invoice.notes){text('ملاحظات',942,880,27,true);text(invoice.notes,942,880,24);y+=15}
  if(invoice.payments.length){text('سجل الدفعات',942,880,27,true);for(const p of invoice.payments)text(`${p.date} — ${money(p.amount)} جنيه${p.note?' — '+p.note:''}`,942,880,24);y+=15}

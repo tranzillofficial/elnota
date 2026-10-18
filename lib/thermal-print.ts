@@ -1,5 +1,5 @@
 import {invoiceBusinessName} from './customer-invoices.ts';
-import {type Invoice,type Ledger,money,total,paid,remaining,installmentSchedule} from './model.ts';
+import {type Invoice,type Ledger,money,total,paid,remaining,customerTotals,installmentSchedule} from './model.ts';
 export function rasterStripe(rgba:Uint8ClampedArray,width:number,height:number):Uint8Array {
  if(width%8||rgba.length!==width*height*4||width<8||height<1||height>256)throw new Error('Invalid raster size');
  const bytes=width/8;const data=new Uint8Array(8+bytes*height);data.set([29,118,48,0,bytes&255,bytes>>8,height&255,height>>8]);
@@ -14,7 +14,7 @@ export async function thermalReceipt(invoice:Invoice,ledger:Ledger,width:384|576
  const customer=ledger.customers.find(c=>c.id===invoice.customerId);
  line(ledger.settings.businessName,true);if(ledger.settings.phone)line(ledger.settings.phone);if(ledger.settings.address)line(ledger.settings.address);line('فاتورة '+invoice.number,true);line(invoice.date);line('العميل: '+(customer?.name||''));if(customer?.phone)line(customer.phone);if(invoice.voided)line('فاتورة ملغاة',true);
  for(const item of invoice.lines){line(item.name,true);line(`${money(item.quantity)} × ${money(item.price)} = ${money(item.quantity*item.price)} ${ledger.settings.currency}`)}
- line('الإجمالي: '+money(total(invoice))+' '+ledger.settings.currency,true);line('المدفوع: '+money(paid(invoice)));line('المتبقي: '+money(remaining(invoice)),true);
+ line('الإجمالي: '+money(total(invoice))+' '+ledger.settings.currency,true);line('المدفوع بالفاتورة: '+money(paid(invoice)));line('المتبقي على حساب العميل: '+money(customerTotals(ledger,invoice.customerId).remaining),true);
  for(const entry of installmentSchedule(invoice))line(`قسط ${entry.number} · ${entry.date} · ${money(entry.amount)}`);
  if(invoice.notes)line(invoice.notes);for(const payment of invoice.payments)line(`${payment.date} · ${money(payment.amount)} · ${payment.note}`);line('النوتة · ElNota');
  const height=rows.length*(size+12)+28;if(height>60000)throw new Error('الفاتورة طويلة جدًا للطباعة المباشرة. استخدم طباعة النظام.');canvas.height=height;ctx.fillStyle='white';ctx.fillRect(0,0,width,height);ctx.direction='rtl';ctx.textAlign='right';ctx.textBaseline='top';ctx.fillStyle='black';rows.forEach((row,i)=>{ctx.font=`${row.bold?'bold ':''}${size}px Tahoma, Arial, sans-serif`;ctx.fillText(row.text,width-12,14+i*(size+12))});

@@ -12,5 +12,5 @@ export function syncPlan({local,remote,remoteRevision,baseline,knownRevision,pri
  const localChanged=local!==baseline.fingerprint;const remoteChanged=remote!==baseline.fingerprint||remoteRevision!==baseline.revision;
  if(localChanged&&remoteChanged)return 'conflict';return localChanged?'push':'pull';
 }
-export function isPristine(ledger:Ledger){return !ledger.customers.length&&!ledger.products.length&&!ledger.invoices.length&&!ledger.categories?.length&&!ledger.settings.phone&&!ledger.settings.address}
+export function isPristine(ledger:Ledger){return !ledger.customerPayments?.length&&!ledger.customers.length&&!ledger.products.length&&!ledger.invoices.length&&!ledger.categories?.length&&!ledger.settings.phone&&!ledger.settings.address}
 export function withLocalImages(remote:Ledger,local:Ledger):Ledger {const images=new Map(local.products.filter(p=>p.image).map(p=>[p.id,p.image]));return {...remote,products:remote.products.map(p=>images.has(p.id)?{...p,image:images.get(p.id)}:p)}}

@@ -15,3 +15,18 @@ export async function exportBackup(data:Ledger){const file=new File([JSON.string
 const url=URL.createObjectURL(file);const a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 export async function readBackup(file:File):Promise<Ledger>{if(file.size>50*1024*1024)throw new Error('الحد الأقصى لملف النسخة 50 MB');const json=JSON.parse(await file.text());const data=json.data||json;if(!validateLedger(data))throw new Error('الملف ليس نسخة نوتة صالحة');return data}
 export async function compressImage(file:File):Promise<string>{if(!file.type.startsWith('image/'))throw new Error('اختر صورة');if(file.size>20*1024*1024)throw new Error('اختر صورة أصغر من 20 MB');const bitmap=await createImageBitmap(file);const canvas=document.createElement('canvas');const scale=Math.min(1,600/Math.max(bitmap.width,bitmap.height));canvas.width=bitmap.width*scale;canvas.height=bitmap.height*scale;canvas.getContext('2d')!.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();return canvas.toDataURL('image/jpeg',0.75)}
+
+export type PendingDailyBackup={id:string;day:string;capturedAt:string;data:Ledger};
+// One durable snapshot per Cairo day, independent from optional two-way sync.
+export async function stageDailyBackup(user:string,data:Ledger,day:string,now=Date.now()){
+ const payload=cloudPayload(data);if(new Blob([JSON.stringify(payload)]).size>10*1024*1024)throw new Error('النسخة أكبر من 10 MB. صدّر نسخة محلية وتواصل مع الإدارة.');
+ const d=await db(),tx=d.transaction('meta','readwrite');const key='daily-queue:'+user;
+ let queue=(await tx.store.get(key)||[]) as PendingDailyBackup[];const last=await tx.store.get('daily-day:'+user);
+ if(!last||last<day){queue=[...queue,{id:crypto.randomUUID(),day,capturedAt:new Date(now).toISOString(),data:payload}].slice(-7);await tx.store.put(queue,key);await tx.store.put(day,'daily-day:'+user)}
+ let device=await tx.store.get('backup-device:'+user);if(!device){device=crypto.randomUUID();await tx.store.put(device,'backup-device:'+user)}
+ await tx.done;return {queue,device:device as string};
+}
+export async function acknowledgeDailyBackup(user:string,id:string,info:import('./cloud-subscription').DeviceBackupInfo){
+ const tx=(await db()).transaction('meta','readwrite'),key='daily-queue:'+user;
+ const queue=(await tx.store.get(key)||[]) as PendingDailyBackup[];await tx.store.put(queue.filter(q=>q.id!==id),key);await tx.store.put(info,'daily-upload:'+user);await tx.done;
+}

@@ -11,3 +11,10 @@ public/offline-assets.json
 public/sw.js
 
 supabase/.temp/
+
+public/app/
+flutter/build/
+flutter/.dart_tool/
+*.log
+
+npm-audit*.json

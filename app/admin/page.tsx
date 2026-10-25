@@ -1,2 +1,2 @@
-import { AdminApp } from '@/components/admin-app';
-export default function Page(){return <AdminApp/>}
+import { redirect } from 'next/navigation';
+export default function Admin(){redirect('/app/#/admin');}

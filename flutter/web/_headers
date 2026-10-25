@@ -1,0 +1,7 @@
+/*
+  X-Robots-Tag: noindex, nofollow
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+/sqlite3.wasm
+  Content-Type: application/wasm
+  Cache-Control: public, max-age=86400

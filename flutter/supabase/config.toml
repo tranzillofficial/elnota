@@ -1,0 +1,2 @@
+[functions.device-login]
+verify_jwt = false

@@ -4,10 +4,11 @@
   "description": "",
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
-    "build": "next build && node scripts/offline-assets.mjs",
+    "build": "node scripts/build-flutter.mjs && next build && node scripts/offline-assets.mjs",
     "start": "next start --hostname 0.0.0.0",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/*.test.ts"
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "build:landing": "next build && node scripts/offline-assets.mjs"
   },
   "repository": {
     "type": "git",
@@ -22,12 +23,12 @@
   "homepage": "https://github.com/tranzillofficial/elnota#readme",
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",
+    "html5-qrcode": "^2.3.8",
     "idb": "^8.0.4",
     "lucide-react": "^1.56.0",
-    "next": "^16.4.0",
+    "next": "16.4.3",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "html5-qrcode": "^2.3.8"
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

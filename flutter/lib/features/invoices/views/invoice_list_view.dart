@@ -54,7 +54,7 @@ class InvoiceListView extends StatelessWidget {
                 ),
               ),
               title: Text(
-                '${'invoice_title'.tr} #${inv.id.substring(0, 8)}',
+                '${'invoice_title'.tr} #${inv.displayNumber}',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(

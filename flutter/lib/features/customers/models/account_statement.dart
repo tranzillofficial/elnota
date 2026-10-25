@@ -25,7 +25,7 @@ class StatementMovement {
     ].contains(row.eventType);
     return StatementMovement(
       id: row.id,
-      reference: row.sourceId,
+      reference: row.reference ?? row.sourceId,
       date: row.occurredAt,
       label: switch (row.eventType) {
         'invoice_charge' => 'فاتورة بيع',

@@ -67,7 +67,7 @@ class _InvoiceDetailViewState extends State<InvoiceDetailView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${'invoice_title'.tr} #${inv.id.substring(0, 8)}'),
+        title: Text('${'invoice_title'.tr} #${inv.displayNumber}'),
         actions: [
           IconButton(
             icon: const Icon(Icons.print_outlined),
@@ -79,7 +79,7 @@ class _InvoiceDetailViewState extends State<InvoiceDetailView> {
               );
               await PdfService.printDocument(
                 bytes,
-                name: 'Invoice_${inv.id.substring(0, 8)}',
+                name: 'Invoice_${inv.displayNumber}',
               );
             },
           ),
@@ -93,7 +93,7 @@ class _InvoiceDetailViewState extends State<InvoiceDetailView> {
               );
               await PdfService.shareDocument(
                 bytes,
-                filename: 'Invoice_${inv.id.substring(0, 8)}.pdf',
+                filename: 'Invoice_${inv.displayNumber}.pdf',
               );
             },
           ),

@@ -12,9 +12,9 @@ const flutter=join(sdk,'bin',process.platform==='win32'?'flutter.bat':'flutter')
 const cwd=resolve('flutter');
 run(flutter,['config','--no-analytics'],cwd);
 run(flutter,['pub','get','--enforce-lockfile'],cwd);
-// Ledger sync and new cloud backup remain disabled until their compatibility
-// implementation and staging validation are complete. Never turn them on here.
-run(flutter,['build','web','--release','--no-pub','--no-wasm-dry-run','--base-href=/app/','--build-name=1.0.5','--build-number=2006','--dart-define=ENABLE_ADMIN_WRITES=true'],cwd);
+// V2 cloud uses separately reviewed tables, server CAS and immutable financial history.
+// Legacy documents and backups remain available for recovery.
+run(flutter,['build','web','--release','--no-pub','--no-wasm-dry-run','--base-href=/app/','--build-name=1.0.5','--build-number=2006','--dart-define=ENABLE_ADMIN_WRITES=true','--dart-define=ENABLE_RELATIONAL_SYNC=true','--dart-define=ENABLE_V2_CLOUD_BACKUP=true'],cwd);
 mkdirSync('public/app',{recursive:true});
 cpSync('flutter/build/web','public/app',{recursive:true});
 console.log('Flutter web prepared at /app/; Next.js owns landing and SEO.');

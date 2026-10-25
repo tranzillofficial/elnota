@@ -4,6 +4,7 @@ import 'app_toast.dart';
 import '../network/connectivity_service.dart';
 import '../sync/services/sync_service.dart';
 import '../utils/app_runtime.dart';
+import '../services/account_access_service.dart';
 
 /// Interactive AppBar or Header badge showing real-time sync status.
 class SyncStatusBadge extends StatelessWidget {
@@ -34,6 +35,22 @@ class SyncStatusBadge extends StatelessWidget {
       String tooltip;
       Color? iconColor;
 
+      final cloud =
+          Get.isRegistered<AccountAccessService>() &&
+          AccountAccessService.to.cloudEnabled;
+      if (!cloud || !SyncService.ledgerCloudEnabled) {
+        return IconButton(
+          icon: const Icon(Icons.save_outlined, color: Color(0xFF00845B)),
+          tooltip: cloud
+              ? 'محفوظ محليًا — خدمة الكلاود الجديدة قيد التجهيز'
+              : 'محفوظ محليًا على هذا الجهاز',
+          onPressed: () => AppToast.info(
+            cloud
+                ? 'الدفتر محفوظ على هذا الجهاز؛ لم تبدأ المزامنة السحابية الجديدة بعد'
+                : 'بيانات هذا الحساب مستقلة على كل جهاز',
+          ),
+        );
+      }
       if (summary.isSyncing) {
         iconWidget = const SizedBox(
           width: 18,
@@ -57,6 +74,9 @@ class SyncStatusBadge extends StatelessWidget {
           child: const Icon(Icons.cloud_upload_outlined),
         );
         tooltip = '${summary.pendingCount} ${'status_sync_pending'.tr}';
+      } else if (summary.lastSuccessAt == null) {
+        iconWidget = const Icon(Icons.cloud_queue_rounded);
+        tooltip = 'لم تتم المزامنة بعد';
       } else {
         iconWidget = const Icon(Icons.cloud_done_rounded, color: Colors.green);
         tooltip = 'status_synced'.tr;

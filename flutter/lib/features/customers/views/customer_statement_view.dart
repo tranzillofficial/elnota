@@ -243,9 +243,7 @@ class _CustomerStatementViewState extends State<CustomerStatementView> {
                               Text(designDate(m.date)),
                               Text(m.label),
                               Text(
-                                m.reference.length > 8
-                                    ? m.reference.substring(0, 8)
-                                    : m.reference,
+                                m.reference,
                                 style: const TextStyle(color: designMuted),
                               ),
                               Text(

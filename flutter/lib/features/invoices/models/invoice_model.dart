@@ -7,6 +7,7 @@ class InvoiceModel {
     required this.id,
     required this.customerId,
     this.customerName,
+    this.invoiceNumber,
     required this.status,
     required this.totalMinor,
     required this.discountMinor,
@@ -19,6 +20,10 @@ class InvoiceModel {
   final String id;
   final String customerId;
   final String? customerName;
+  final String? invoiceNumber;
+  String get displayNumber => invoiceNumber?.isNotEmpty == true
+      ? invoiceNumber!
+      : (id.length > 8 ? id.substring(0, 8) : id);
   final String status;
   final int totalMinor;
   final int discountMinor;
@@ -36,17 +41,18 @@ class InvoiceModel {
   String get formattedTotal => MoneyUtils.formatMinor(totalMinor);
 
   factory InvoiceModel.fromRow(InvoiceRow r) => InvoiceModel(
-        id: r.id,
-        customerId: r.customerId,
-        customerName: r.customerName,
-        status: r.status,
-        totalMinor: r.totalMinor,
-        discountMinor: r.discountMinor,
-        notes: r.notes,
-        isManualAmount: r.isManualAmount,
-        invoiceDate: r.invoiceDate,
-        dueDate: r.dueDate,
-      );
+    id: r.id,
+    customerId: r.customerId,
+    customerName: r.customerName,
+    invoiceNumber: r.invoiceNumber,
+    status: r.status,
+    totalMinor: r.totalMinor,
+    discountMinor: r.discountMinor,
+    notes: r.notes,
+    isManualAmount: r.isManualAmount,
+    invoiceDate: r.invoiceDate,
+    dueDate: r.dueDate,
+  );
 }
 
 /// Line-item model.
@@ -70,11 +76,11 @@ class InvoiceItemModel {
   int get lineTotal => quantity * unitPriceMinor - discountMinor;
 
   factory InvoiceItemModel.fromRow(InvoiceItemRow r) => InvoiceItemModel(
-        id: r.id,
-        description: r.description,
-        quantity: r.quantity,
-        unitPriceMinor: r.unitPriceMinor,
-        discountMinor: r.discountMinor,
-        productId: r.productId,
-      );
+    id: r.id,
+    description: r.description,
+    quantity: r.quantity,
+    unitPriceMinor: r.unitPriceMinor,
+    discountMinor: r.discountMinor,
+    productId: r.productId,
+  );
 }

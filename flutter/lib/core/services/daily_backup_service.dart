@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../sync/models/cloud_snapshot.dart';
 import 'dart:convert';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
@@ -79,7 +80,7 @@ class DailyBackupService extends GetxService with WidgetsBindingObserver {
           !AccountAccessService.to.cloudEnabled) {
         return false;
       }
-      final snapshot = await DatabaseService.to.dao.exportLocalSnapshot();
+      final snapshot = CloudSnapshot.normalize(await DatabaseService.to.dao.exportLocalSnapshot());
       if (utf8.encode(jsonEncode(snapshot)).length > 10 * 1024 * 1024) {
         throw StateError('BACKUP_TOO_LARGE');
       }

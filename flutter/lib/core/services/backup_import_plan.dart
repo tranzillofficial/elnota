@@ -143,9 +143,14 @@ class BackupImportPlan {
         tables[table]!.add(row);
       }
     }
-    final plan = BackupImportPlan(decoded, tables, [
-      'الاستيراد متاح لدفتر فارغ فقط، ولا يستبدل دفترًا قائمًا.',
-    ], Map<String, dynamic>.from(decoded['business_profile'] as Map? ?? {}));
+    final plan = BackupImportPlan(
+      decoded,
+      tables,
+      ['الاستيراد متاح لدفتر فارغ فقط، ولا يستبدل دفترًا قائمًا.'],
+      Map<String, dynamic>.from(
+        (data['business_profile'] ?? decoded['business_profile']) as Map? ?? {},
+      ),
+    );
     plan.validate();
     return plan;
   }
@@ -203,8 +208,9 @@ class BackupImportPlan {
     final products = _rows(data, 'products');
     final warnings = <String>[
       'يتم الحفاظ على إجماليات الفواتير القديمة؛ البنود ذات الكميات الكسرية تُعرض كبند مرحّل مع تفاصيل الكمية الأصلية.',
-      'حُفظ الملف الأصلي كاملًا داخل أرشيف الاستيراد. لا يتم رفعه إلى الكلاود.',
-      'النسخة القديمة لا تحدد مالك الملف؛ تأكد أنها تخص الحساب المفتوح.',
+      'سيُحفظ الملف الأصلي كاملًا داخل أرشيف الاستيراد على هذا الجهاز، دون رفعه إلى الكلاود.',
+      if (original['owner_id'] == null)
+        'النسخة القديمة لا تحدد مالك الملف؛ تأكد أنها تخص الحساب المفتوح.',
     ];
     for (final c in customers) {
       final notes = [
@@ -377,6 +383,18 @@ class BackupImportPlan {
             'months': months,
             'first_due_date': _date(plan['firstDueDate'] as String),
           });
+        } else {
+          t['invoice_terms']!.add({
+            'invoice_id': id,
+            'workspace_id': 'default',
+            'customer_id': customer,
+            'method': method == 'installment' ? 'installments' : method,
+            'upfront_minor': paid,
+            'months': 1,
+            'first_due_date': inv['dueDate'] == ''
+                ? date
+                : _date(inv['dueDate'] as String),
+          });
         }
       }
     }
@@ -490,7 +508,8 @@ class BackupImportPlan {
             (r['quantity'] as int) * (r['unit_price_minor'] as int) -
             (r['discount_minor'] as int),
       );
-      if (amount != i['total_minor']) {
+      if (!(lines.isEmpty && i['is_manual_amount'] == 1) &&
+          amount != i['total_minor']) {
         throw const FormatException('إجمالي البنود لا يطابق الفاتورة');
       }
       final charges = tables['ledger_entries']!

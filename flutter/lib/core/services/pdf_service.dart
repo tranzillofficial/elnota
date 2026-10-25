@@ -12,8 +12,6 @@ import '../../features/payments/models/payment_model.dart';
 class PdfService {
   PdfService._();
 
-  static String _shortId(String id) => id.length > 8 ? id.substring(0, 8) : id;
-
   /// Generates a PDF invoice.
   static Future<Uint8List> generateInvoicePdf({
     required InvoiceModel invoice,
@@ -77,7 +75,7 @@ class PdfService {
                           ),
                           pw.SizedBox(height: 4),
                           pw.Text(
-                            'Invoice #${_shortId(invoice.id).toUpperCase()}',
+                            'Invoice #${invoice.displayNumber}',
                             style: pw.TextStyle(
                               fontSize: 14,
                               fontWeight: pw.FontWeight.bold,
@@ -378,7 +376,7 @@ class PdfService {
                         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                         children: [
                           pw.Text(
-                            'Invoice #${_shortId(inv.id)} (${inv.invoiceDate.year}-${inv.invoiceDate.month.toString().padLeft(2, '0')}-${inv.invoiceDate.day.toString().padLeft(2, '0')})',
+                            'Invoice #${inv.displayNumber} (${inv.invoiceDate.year}-${inv.invoiceDate.month.toString().padLeft(2, '0')}-${inv.invoiceDate.day.toString().padLeft(2, '0')})',
                             style: const pw.TextStyle(fontSize: 9),
                           ),
                           pw.Text(

@@ -107,6 +107,15 @@ void main() {
     final plan = BackupImportPlan.parse(jsonEncode(legacy()));
     expect(await dao.importBackup(plan), true);
     expect(await dao.importBackup(plan), false);
+    final movements = await dao.watchCustomerLedger('c1').first;
+    expect(
+      movements.firstWhere((r) => r.eventType == 'invoice_charge').reference,
+      'OLD-001',
+    );
+    expect(
+      movements.firstWhere((r) => r.eventType == 'invoice_charge').sourceId,
+      'i1',
+    );
     final snapshot = await dao.exportLocalSnapshot();
     final restored = BackupImportPlan.parse(jsonEncode(snapshot));
     expect(restored.balanceMinor, 7500);

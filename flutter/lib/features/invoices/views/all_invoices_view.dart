@@ -45,7 +45,7 @@ class _AllInvoicesViewState extends State<AllInvoicesView> {
               data.invoices
                   .where(
                     (i) =>
-                        ('${names[i.customerId] ?? i.customerName ?? ''} ${i.id}'
+                        ('${names[i.customerId] ?? i.customerName ?? ''} ${i.displayNumber} ${i.id}'
                             .contains(query)) &&
                         (method == 'all' ||
                             (terms[i.id]?.method ?? 'credit') == method) &&
@@ -282,7 +282,7 @@ class _AllInvoicesViewState extends State<AllInvoicesView> {
                           final m = t?.method ?? 'credit';
                           return <Widget>[
                             Text(
-                              '#${i.id.substring(0, i.id.length < 8 ? i.id.length : 8)}',
+                              '#${i.displayNumber}',
                               style: const TextStyle(
                                 color: designGreen,
                                 fontWeight: FontWeight.bold,
@@ -623,7 +623,7 @@ class _AllInvoicesViewState extends State<AllInvoicesView> {
                                   ),
                                 ),
                                 Text(
-                                  '#${i.id.substring(0, i.id.length < 6 ? i.id.length : 6)}',
+                                  '#${i.displayNumber}',
                                   style: const TextStyle(
                                     color: designGreen,
                                     fontSize: 10,

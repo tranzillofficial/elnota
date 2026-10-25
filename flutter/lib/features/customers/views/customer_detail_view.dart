@@ -38,7 +38,7 @@ class _CustomerDetailViewState extends State<CustomerDetailView> {
               (
                 i.invoiceDate,
                 'فاتورة',
-                'فاتورة ${i.id.substring(0, 8)}',
+                'فاتورة ${i.displayNumber}',
                 i.netMinor,
               ),
             for (final p in payments)
@@ -123,7 +123,7 @@ class _CustomerDetailViewState extends State<CustomerDetailView> {
                         rows: filteredInvoices
                             .map(
                               (i) => <Widget>[
-                                Text(i.id.substring(0, 8)),
+                                Text(i.displayNumber),
                                 Text(designDate(i.invoiceDate)),
                                 DesignPill(
                                   i.isPosted ? 'مرحّلة' : 'مسودة',

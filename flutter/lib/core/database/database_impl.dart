@@ -1,11 +1,13 @@
 import 'dart:convert';
 import '../services/backup_import_plan.dart';
+import '../sync/models/cloud_snapshot.dart';
 import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 import '../../features/products/models/catalog_models.dart';
 
 part 'catalog_dao.dart';
+part 'cloud_dao.dart';
 
 // ─── Domain Models ───────────────────────────────────────────────────────────
 
@@ -166,7 +168,9 @@ class RecentActivityItem {
 }
 
 class LedgerEntryRow {
+  final String? reference;
   const LedgerEntryRow({
+    this.reference,
     required this.id,
     required this.workspaceId,
     required this.customerId,
@@ -754,7 +758,7 @@ class AppDao {
 
   Stream<List<LedgerEntryRow>> watchCustomerLedger(String customerId) => _db
       .customSelect(
-        'SELECT * FROM ledger_entries WHERE workspace_id = ? AND customer_id = ? ORDER BY occurred_at, id',
+        'SELECT l.*, i.invoice_number AS display_reference FROM ledger_entries l LEFT JOIN invoices i ON i.id=l.source_id AND i.workspace_id=l.workspace_id WHERE l.workspace_id = ? AND l.customer_id = ? ORDER BY l.occurred_at, l.id',
         variables: [
           Variable.withString(_wsId),
           Variable.withString(customerId),
@@ -765,6 +769,7 @@ class AppDao {
         (rows) => rows
             .map(
               (r) => LedgerEntryRow(
+                reference: r.readNullable<String>('display_reference'),
                 id: r.read<String>('id'),
                 workspaceId: r.read<String>('workspace_id'),
                 customerId: r.read<String>('customer_id'),

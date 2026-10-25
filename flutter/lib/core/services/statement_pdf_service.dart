@@ -46,9 +46,7 @@ class StatementPdfService {
                     l.movement.debitMinor == 0
                         ? '—'
                         : money(l.movement.debitMinor),
-                    l.movement.reference.length > 8
-                        ? l.movement.reference.substring(0, 8)
-                        : l.movement.reference,
+                    l.movement.reference,
                     l.movement.label,
                     date(l.movement.date),
                   ],

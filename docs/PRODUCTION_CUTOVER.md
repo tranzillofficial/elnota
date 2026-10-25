@@ -42,12 +42,21 @@ and were rolled back. No financial/legacy cloud schema was changed.
 Next.js 16.4.0 had critical audit findings; updated to 16.4.3, npm audit is clean.
 Flutter pubspec.yaml and pubspec.lock remain unchanged.
 
-## Unfinished release gates — do not promote yet
-- Relational cloud push/pull is still an incomplete scaffold. It must be implemented
-  and tested for two-device writes, idempotency, conflict handling and cloud import.
-- New daily cloud backup remains disabled pending a compatible validated backend.
-- Physical Android install/update/offline restart has not been tested.
-- Actual customer file imports need their backup files or original devices.
-- Preview must be checked on the exact final commit before promoting the domain.
-Keeping cloud flags false protects old data but does not satisfy a cloud production
-release. Do not describe this branch as completed production migration.
+## Versioned cloud verification and release limits
+V2 cloud and daily backups use new tables; legacy cloud documents and backups remain intact.
+A compare-and-swap RPC enforces ownership, active cloud entitlement, immutable posted
+financial rows and validated totals. Three-way client merging preserves independent
+receipts and rejects concurrent edits without silently overwriting either device.
+Existing legacy cloud must reconcile invoice IDs, totals and balances before first migration.
+The original sync body is retained privately; migrated users are prevented from creating
+an independent legacy cloud branch. Nonmigrated legacy users continue unchanged.
+106 Flutter tests passed, one demo-only test skipped. Live API checks passed for ownership,
+legacy reconciliation, concurrent receipts/retry, immutability, subscription expiry,
+suspension, history and daily backup idempotency. Browser import of the technical
+fixture preserved the invoice and both receipts. These tests used only our technical account.
+All named real account rows and legacy cloud/backup contents match the encrypted baseline.
+A legacy daily backup timestamp advanced through the existing scheduled job without data changes.
+Release flags enable V2 on every new platform build after these checks.
+Physical Android installation and Windows installation remain unverified on user hardware.
+Daily uploads catch up on reconnect/resume; execution at midnight with the app terminated
+is not guaranteed. Device-only customer data requires an original backup file to import.

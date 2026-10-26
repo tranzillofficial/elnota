@@ -91,6 +91,7 @@ class AuthService extends GetxService {
     isLoading.value = true;
     try {
       final supa = SupabaseService.to;
+      await supa.ensureInitialized();
       if (supa.isInitialized && supa.client != null) {
         final res = await supa.client!.auth.signInWithPassword(
           email: email.trim().toLowerCase(),
@@ -131,6 +132,7 @@ class AuthService extends GetxService {
     isLoading.value = true;
     try {
       final supa = SupabaseService.to;
+      await supa.ensureInitialized();
       if (supa.isInitialized && supa.client != null) {
         final res = await supa.client!.auth.signUp(
           email: email.trim().toLowerCase(),

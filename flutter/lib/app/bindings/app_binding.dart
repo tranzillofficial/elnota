@@ -1,4 +1,3 @@
-import '../../core/utils/backend_config.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import '../../core/database/app_database.dart';
@@ -56,10 +55,7 @@ Future<void> initServices() async {
   Get.put<LocaleService>(LocaleService(), permanent: true);
   final supabase = Get.put<SupabaseService>(SupabaseService(), permanent: true);
   if (!AppRuntime.demo) {
-    await supabase.init(
-      url: BackendConfig.url,
-      anonKey: BackendConfig.publishableKey,
-    );
+    await supabase.ensureInitialized();
   }
   final userId = supabase.client?.auth.currentUser?.id;
   final dbSvc = Get.put<DatabaseService>(DatabaseService(), permanent: true);

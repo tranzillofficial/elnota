@@ -1,7 +1,11 @@
 import 'dart:async';
+
 import 'package:get/get.dart';
+
 import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import 'supabase_service.dart';
 import '../utils/app_runtime.dart';
 
@@ -9,20 +13,24 @@ class AccountAccess {
   const AccountAccess({
     this.active = false,
     this.cloudUntil,
-    this.catalogOverride = false,
+    this.catalogOverride,
+    this.printingEnabled = false,
   });
-  final bool active, catalogOverride;
+  final bool active;
+  final bool? catalogOverride;
+  final bool printingEnabled;
   final DateTime? cloudUntil;
   bool cloudAt(DateTime now) =>
       active && cloudUntil != null && cloudUntil!.isAfter(now);
-  bool catalogAt(DateTime now) => active && (cloudAt(now) || catalogOverride);
+  bool catalogAt(DateTime now) => active && (catalogOverride ?? cloudAt(now));
   factory AccountAccess.fromMap(Map<String, dynamic> row) => AccountAccess(
     active:
         row['activated_at'] != null &&
         row['suspended_at'] == null &&
         row['deleted_at'] == null,
     cloudUntil: DateTime.tryParse(row['cloud_until'] as String? ?? ''),
-    catalogOverride: row['catalog_enabled'] == true,
+    catalogOverride: row['catalog_enabled'] as bool?,
+    printingEnabled: row['printing_enabled'] == true,
   );
 }
 
@@ -49,6 +57,8 @@ class AccountAccessService extends GetxService {
   StreamSubscription<dynamic>? _auth;
   bool get cloudEnabled => access.value.cloudAt(DateTime.now());
   bool get catalogEnabled => access.value.catalogAt(DateTime.now());
+  bool get printingEnabled =>
+      access.value.active && access.value.printingEnabled;
   String? get _uid => SupabaseService.to.client?.auth.currentUser?.id;
   @override
   void onInit() {
@@ -106,17 +116,19 @@ class AccountAccessService extends GetxService {
       final client = SupabaseService.to.client!;
       final row = await client
           .from('elnota_accounts')
-          .select('activated_at,cloud_until,suspended_at,deleted_at')
+          .select(
+            'activated_at,cloud_until,suspended_at,deleted_at,printing_enabled',
+          )
           .eq('user_id', uid)
           .maybeSingle();
-      bool override = false;
+      bool? override;
       try {
         final feature = await client
             .from('elnota_feature_access')
             .select('catalog_enabled')
             .eq('user_id', uid)
             .maybeSingle();
-        override = feature?['catalog_enabled'] == true;
+        override = feature?['catalog_enabled'] as bool?;
       } catch (_) {
         /* Older backend has no override contract. Deny the override. */
       }

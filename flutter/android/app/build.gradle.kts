@@ -2,6 +2,8 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
+    // gradle.properties explicitly uses the legacy Kotlin plugin with AGP 9.
+    id("org.jetbrains.kotlin.android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -26,7 +28,7 @@ android {
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         // Preview builds can install alongside legacy apps without replacing their data.
-        applicationId = "shop.elnota.preview"
+        applicationId = "shop.elnota.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

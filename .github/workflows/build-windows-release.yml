@@ -1,0 +1,51 @@
+name: Build Windows installer
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/windows-release-1.0.7]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 40
+    env:
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: flutter
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - name: Build tested application
+        run: |
+          flutter build windows --release --no-pub --build-name=1.0.7 --build-number=2008 --dart-define=ENABLE_ADMIN_WRITES=true --dart-define=ENABLE_RELATIONAL_SYNC=true --dart-define=ENABLE_V2_CLOUD_BACKUP=true
+          if ($LASTEXITCODE -ne 0) { throw 'Windows build failed' }
+      - name: Package installer
+        run: |
+          $installer = Join-Path $env:RUNNER_TEMP 'innosetup-6.4.3.exe'
+          Invoke-WebRequest 'https://github.com/jrsoftware/issrc/releases/download/is-6_4_3/innosetup-6.4.3.exe' -OutFile $installer
+          $signature = Get-AuthenticodeSignature -LiteralPath $installer
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'Pyrsys B.V.') { throw 'Invalid packaging tool signature' }
+          $tool = Join-Path $env:RUNNER_TEMP 'inno'
+          $process = Start-Process -FilePath $installer -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/CURRENTUSER','/PORTABLE=1','/NOICONS','/TASKS=',"/DIR=$tool" -WindowStyle Hidden -PassThru -Wait
+          if ($process.ExitCode -ne 0) { throw 'Packaging tool setup failed' }
+          & (Join-Path $tool 'ISCC.exe') /DAppVersion=1.0.7 distribution/windows/elnota.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed' }
+          $binary = Get-Item 'build/windows/x64/runner/Release/elnota.exe'
+          $artifact = Get-Item 'distribution/windows/output/ElNota-1.0.7-windows-x64.exe'
+          if ($binary.VersionInfo.FileVersion -notlike '1.0.7*' -or $artifact.Length -lt 1MB) { throw 'Unexpected release artifact' }
+          Get-FileHash -LiteralPath $artifact.FullName -Algorithm SHA256 | Format-List | Out-File 'distribution/windows/output/SHA256.txt'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ElNota-1.0.7-windows-x64
+          path: |
+            flutter/distribution/windows/output/ElNota-1.0.7-windows-x64.exe
+            flutter/distribution/windows/output/SHA256.txt
+          if-no-files-found: error
+          retention-days: 30

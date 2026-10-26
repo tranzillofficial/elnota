@@ -257,8 +257,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             if (!await confirm(
                               title,
                               '$title للحساب ${account['email']}؟ تبقى بيانات الدفتر محفوظة.',
-                            ))
+                            )) {
                               return;
+                            }
                             final uid = account['user_id'] as String;
                             final ok = operation.startsWith('cloud_')
                                 ? await ctrl.manageCloud(
@@ -276,12 +277,13 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                     operation == 'printing_on',
                                   )
                                 : await ctrl.manageAccount(uid, operation);
-                            if (context.mounted && ok)
+                            if (context.mounted && ok) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('تم تحديث الخدمة'),
                                 ),
                               );
+                            }
                           },
                         ),
                     ],
@@ -434,3 +436,4 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 }
+

@@ -1,0 +1,48 @@
+name: Build Android release candidate
+on:
+  push:
+    branches: [codex/android-release-1.0.7]
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: flutter
+        shell: bash
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - name: Prepare isolated build signing
+        run: |
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
+          password=$(openssl rand -hex 32)
+          echo "::add-mask::$password"
+          mkdir -p android/.signing
+          keytool -genkeypair -keystore android/.signing/ci.jks -storepass "$password" -keypass "$password" -alias ci -keyalg RSA -keysize 2048 -validity 2 -dname "CN=ElNota CI Candidate"
+          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=ci\nstoreFile=%s/android/.signing/ci.jks\n' "$password" "$password" "$PWD" > android/key.properties
+          sed -i 's@^org.gradle.jvmargs=.*@org.gradle.jvmargs=-Xmx3G -XX:MaxMetaspaceSize=1G -Dfile.encoding=UTF-8@;s@org.gradle.workers.max=1@org.gradle.workers.max=2@' android/gradle.properties
+      - name: Build tested application
+        run: flutter build apk --release --target-platform android-arm,android-arm64 --no-pub --build-name=1.0.7 --build-number=2008 --dart-define=ENABLE_ADMIN_WRITES=true --dart-define=ENABLE_RELATIONAL_SYNC=true --dart-define=ENABLE_V2_CLOUD_BACKUP=true
+      - name: Record candidate checksum
+        run: |
+          cd build/app/outputs/flutter-apk
+          sha256sum app-release.apk > SHA256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ElNota-1.0.7-android-candidate
+          path: |
+            flutter/build/app/outputs/flutter-apk/app-release.apk
+            flutter/build/app/outputs/flutter-apk/SHA256.txt
+          if-no-files-found: error
+          retention-days: 7

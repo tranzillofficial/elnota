@@ -1,20 +1,30 @@
+import '../../../core/utils/install_shortcut.dart';
+
 import 'package:file_picker/file_picker.dart';
+
 import '../../../core/services/backup_import_plan.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/services/business_profile.dart';
+
 import 'package:get_storage/get_storage.dart';
+
 import '../../admin/repositories/admin_repository.dart';
 import '../../auth/views/device_login_view.dart';
 import '../../auth/views/device_scanner_view.dart';
+
 import 'package:flutter/foundation.dart';
+
 import '../../../core/services/account_access_service.dart';
 import '../../../core/utils/app_runtime.dart';
 import '../../../core/services/daily_backup_service.dart';
+
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:printing/printing.dart';
+
 import '../../../core/widgets/design_widgets.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/accounting_form_frame.dart';
@@ -43,6 +53,9 @@ class _SettingsViewState extends State<SettingsView> {
     super.initState();
     if (!Get.isRegistered<SettingsController>()) Get.put(SettingsController());
     ctrl = Get.find<SettingsController>();
+    if (Get.isRegistered<AccountAccessService>()) {
+      AccountAccessService.to.refreshAccess();
+    }
   }
 
   bool importing = false;
@@ -125,9 +138,8 @@ class _SettingsViewState extends State<SettingsView> {
       }
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تعذر حفظ الإعدادات')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('تعذر حفظ الإعدادات')));
       }
     }
   }
@@ -157,6 +169,10 @@ class _SettingsViewState extends State<SettingsView> {
             height: 750,
             child: PdfPreview(
               build: (_) async => bytes,
+              allowPrinting:
+                  AppRuntime.demo ||
+                  (Get.isRegistered<AccountAccessService>() &&
+                      AccountAccessService.to.printingEnabled),
               canChangePageFormat: false,
               canChangeOrientation: false,
             ),
@@ -354,6 +370,31 @@ class _SettingsViewState extends State<SettingsView> {
                 style: const TextStyle(color: designMuted),
               ),
             ),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                onPressed:
+                    Get.isRegistered<AccountAccessService>() &&
+                        !AccountAccessService.to.loading.value
+                    ? () => AccountAccessService.to.refreshAccess()
+                    : null,
+                icon: const Icon(Icons.refresh),
+                label: const Text('تحديث حالة الاشتراك والخدمات'),
+              ),
+            ),
+            Text(
+              cloud
+                  ? 'زامن بيانات هذا الجهاز الحالية مع الكلاود لتظهر عند فتح نفس الحساب على أجهزتك الأخرى. يتم دمج التغييرات الآمنة؛ التعارضات تظهر دون استبدال السجلات المالية.'
+                  : 'فعّل اشتراك الكلاود من الإدارة ثم حدّث حالة الاشتراك هنا لإتاحة المزامنة.',
+            ),
+            if (summary?.lastError != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  summary!.lastError!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
             _SettingRow(
               'النسخ الاحتياطي اليومي',
               Text(
@@ -376,7 +417,7 @@ class _SettingsViewState extends State<SettingsView> {
                 style: const TextStyle(color: designMuted, fontSize: 12),
               ),
             const SizedBox(height: 16),
-            OutlinedButton.icon(
+            FilledButton.icon(
               onPressed: !cloud || sync == null || summary?.isSyncing == true
                   ? null
                   : () async {
@@ -386,8 +427,8 @@ class _SettingsViewState extends State<SettingsView> {
                           SnackBar(
                             content: Text(
                               ok && sync.summary.value.lastSuccessAt != null
-                                  ? 'اكتملت محاولة المزامنة'
-                                  : 'البيانات محفوظة محليًا؛ لم يتم تأكيد المزامنة',
+                                  ? 'تمت مزامنة البيانات الحالية مع الكلاود'
+                                  : sync.summary.value.lastError ?? 'لم تتم المزامنة؛ تحقق من الاتصال واشتراك الكلاود. البيانات المحلية محفوظة.',
                             ),
                           ),
                         );
@@ -395,7 +436,9 @@ class _SettingsViewState extends State<SettingsView> {
                     },
               icon: const Icon(Icons.sync),
               label: Text(
-                summary?.isSyncing == true ? 'جارٍ المزامنة…' : 'مزامنة الآن',
+                summary?.isSyncing == true
+                    ? 'جارٍ المزامنة…'
+                    : 'مزامنة البيانات المحلية مع الكلاود الآن',
               ),
             ),
             const SizedBox(height: 16),
@@ -566,6 +609,30 @@ class _SettingsViewState extends State<SettingsView> {
                 ),
               ],
             ),
+            if (kIsWeb &&
+                !AppRuntime.demo &&
+                auth?.isAuthenticated == true) ...[
+              DesignPanel(
+                child: ListTile(
+                  leading: const Icon(Icons.add_to_home_screen),
+                  title: const Text('تثبيت اختصار'),
+                  subtitle: const Text('افتح النوتة من شاشة جهازك مباشرة'),
+                  trailing: TextButton(
+                    onPressed: () async {
+                      try {
+                        AppToast.info(await installShortcut());
+                      } catch (_) {
+                        AppToast.info(
+                          'من قائمة المتصفح اختر إضافة إلى الشاشة الرئيسية',
+                        );
+                      }
+                    },
+                    child: const Text('تثبيت اختصار'),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             DesignPanel(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -612,11 +679,11 @@ class _SettingsViewState extends State<SettingsView> {
                     )
                   : Column(
                       children: [
+                        backups,
+                        const SizedBox(height: 16),
                         business,
                         const SizedBox(height: 16),
                         printing,
-                        const SizedBox(height: 16),
-                        backups,
                         const SizedBox(height: 16),
                         preferences,
                       ],

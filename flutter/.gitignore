@@ -48,6 +48,7 @@ app.*.map.json
 /distribution/artifacts/
 /distribution/windows/output/
 /android/key.properties
+/android/.signing/
 *.jks
 *.keystore
 

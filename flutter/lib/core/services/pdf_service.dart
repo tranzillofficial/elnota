@@ -1,9 +1,18 @@
 import 'business_profile.dart';
+import 'account_access_service.dart';
+
+import 'package:get/get.dart';
+
+import '../utils/app_runtime.dart';
+import '../widgets/app_toast.dart';
+
 import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+
 import '../utils/money_utils.dart';
 import '../../features/customers/models/customer_model.dart';
 import '../../features/invoices/models/invoice_model.dart';
@@ -26,9 +35,8 @@ class PdfService {
     final logo = showLogo
         ? pw.MemoryImage(
             logoData == null
-                ? (await rootBundle.load(
-                    'assets/images/logo.png',
-                  )).buffer.asUint8List()
+                ? (await rootBundle.load('assets/images/logo.png')).buffer
+                      .asUint8List()
                 : base64Decode(logoData),
           )
         : null;
@@ -428,6 +436,16 @@ class PdfService {
     Uint8List bytes, {
     String name = 'Document',
   }) async {
+    if (!AppRuntime.demo) {
+      if (Get.isRegistered<AccountAccessService>()) {
+        await AccountAccessService.to.refreshAccess();
+      }
+      if (!Get.isRegistered<AccountAccessService>() ||
+          !AccountAccessService.to.printingEnabled) {
+        AppToast.info('خدمة الطباعة غير مفعّلة لحسابك؛ راجع الإدارة');
+        return;
+      }
+    }
     final printerUrl = BusinessProfile.values['printer'] as String?;
     if (printerUrl != null && printerUrl.isNotEmpty) {
       await Printing.directPrintPdf(

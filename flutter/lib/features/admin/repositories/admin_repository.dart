@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../../core/services/supabase_service.dart';
 import '../../../core/utils/app_runtime.dart';
 
@@ -55,11 +56,9 @@ class AdminRepository implements AdminGateway, AdminAccountControls {
           .select('user_id,catalog_enabled')
           .inFilter('user_id', result.map((r) => r['user_id']).toList());
       for (final row in result) {
-        row['catalog_enabled'] =
-            overrides
-                .where((f) => f['user_id'] == row['user_id'])
-                .firstOrNull?['catalog_enabled'] ==
-            true;
+        row['catalog_enabled'] = overrides
+            .where((f) => f['user_id'] == row['user_id'])
+            .firstOrNull?['catalog_enabled'];
       }
     } catch (_) {
       /* Feature contract is staged, not deployed to legacy production. */

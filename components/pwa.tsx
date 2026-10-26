@@ -1,6 +1,5 @@
 'use client';
 import {createContext,useContext,useCallback,useEffect,useRef,useState} from 'react';
-import {Download,X} from 'lucide-react';
 interface InstallPrompt extends Event {prompt():Promise<void>;userChoice:Promise<{outcome:string}>}
 type PWAState={prompt:InstallPrompt|null;ios:boolean;installed:boolean;offlineReady:boolean;preparing:boolean;error:string;install:()=>void;prepareOffline:()=>Promise<void>};
 const Context=createContext<PWAState|null>(null);
@@ -22,4 +21,4 @@ export function PWAProvider({children}:{children:React.ReactNode}){
  function install(){if(prompt){const current=prompt;setPrompt(null);void current.prompt().then(()=>current.userChoice).catch(()=>setError('استخدم خيار تثبيت التطبيق من قائمة المتصفح.'));}else if(ios){setError('للتثبيت: Safari ← مشاركة ← إضافة إلى الشاشة الرئيسية ← إضافة.')}else{setError('افتح قائمة Chrome أو Edge واختر تثبيت النوتة أو إضافة إلى الشاشة الرئيسية.')}void prepareOffline()}
  return <Context.Provider value={{prompt,ios,installed,offlineReady,preparing,error,install,prepareOffline}}>{children}</Context.Provider>;
 }
-export function PWA(){const {prompt,ios,installed,install}=usePWA();const [hidden,setHidden]=useState(true);useEffect(()=>{setHidden(sessionStorage.getItem('install-dismissed')==='1')},[]);if(hidden||installed||(!prompt&&!ios))return null;return <aside className="install-banner"><Download size={20}/><div><strong>النوتة على جهازك</strong><small>{ios?'من Safari: مشاركة ← إضافة إلى الشاشة الرئيسية':'ثبّت التطبيق وافتح حساباتك بضغطة واحدة'}</small></div><button onClick={install}>تثبيت</button><button className="icon-button" aria-label="إغلاق" onClick={()=>{setHidden(true);sessionStorage.setItem('install-dismissed','1')}}><X size={18}/></button></aside>}
+export function PWA(){return null}

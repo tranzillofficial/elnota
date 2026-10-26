@@ -1,6 +1,9 @@
+import 'admin_account_card.dart';
 import 'release_manager.dart';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import '../../../core/widgets/design_widgets.dart';
 import '../../../core/utils/app_routes.dart';
 import '../controllers/admin_controller.dart';
@@ -128,7 +131,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     ),
                     const Divider(),
                     const Text(
-                      'المزامنة مع دفاتر النسخة القديمة غير مفعلة. إدارة المنصة لا تحذف بيانات العملاء.',
+                      'من قسم الحسابات يمكنك تفعيل وإيقاف الكلاود والمخزون والطباعة، أو إيقاف الحساب. تظهر الإجراءات مباشرة أسفل كل حساب.',
                     ),
                   ],
                 ),
@@ -226,162 +229,62 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             Text(ctrl.error.value!, style: const TextStyle(color: Colors.red)),
           DesignPanel(
             child: tab == 0
-                ? DesignTable(
-                    minWidth: 1050,
-                    rowHeight: 62,
-                    headers: const [
-                      'النشاط',
-                      'البريد',
-                      'الحساب',
-                      'السحابة حتى',
-                      'الطباعة',
-                      'الإجراءات',
-                      'استثناء المنتجات',
-                      'إدارة الحساب والكلاود',
-                    ],
-                    rows: accounts.map((a) {
-                      final active =
-                          a['activated_at'] != null &&
-                          a['suspended_at'] == null &&
-                          a['deleted_at'] == null;
-                      return <Widget>[
-                        Text(
-                          '${a['business_name']}'.isEmpty
-                              ? '—'
-                              : '${a['business_name']}',
+                ? Column(
+                    children: [
+                      if (accounts.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Text('لا توجد حسابات'),
                         ),
-                        Text('${a['email']}'),
-                        DesignPill(
-                          a['deleted_at'] != null
-                              ? 'مؤرشف'
-                              : a['suspended_at'] != null
-                              ? 'موقوف'
-                              : active
-                              ? 'مفعّل'
-                              : 'بانتظار التفعيل',
-                          color: active ? designGreen : Colors.orange,
-                        ),
-                        Text(
-                          a['cloud_until'] == null
-                              ? '—'
-                              : designDate(
-                                  DateTime.parse(
-                                    a['cloud_until'] as String,
-                                  ).toLocal(),
-                                ),
-                        ),
-                        DesignPill(
-                          a['printing_enabled'] == true
-                              ? 'مفعّلة'
-                              : 'غير مفعّلة',
-                        ),
-                        TextButton(
-                          onPressed:
-                              !AdminRepository.writesEnabled || ctrl.busy.value
-                              ? null
-                              : () async {
-                                  final enabled = a['printing_enabled'] != true;
-                                  if (await confirm(
-                                    'صلاحية الطباعة',
-                                    '${enabled ? 'تفعيل' : 'إيقاف'} الطباعة للحساب ${a['email']}؟',
-                                  )) {
-                                    await ctrl.changePrinting(
-                                      a['user_id'] as String,
-                                      enabled,
-                                    );
-                                  }
-                                },
-                          child: const Text('تغيير الطباعة'),
-                        ),
-                        TextButton(
-                          onPressed:
-                              !AdminRepository.writesEnabled || ctrl.busy.value
-                              ? null
-                              : () async {
-                                  final enabled = a['catalog_enabled'] != true;
-                                  if (await confirm(
-                                    'صلاحية المنتجات',
-                                    '${enabled ? 'تفعيل' : 'إيقاف'} استثناء المنتجات لهذا الحساب بدون منح كلاود؟',
-                                  )) {
-                                    await ctrl.changeCatalog(
-                                      a['user_id'] as String,
-                                      enabled,
-                                    );
-                                  }
-                                },
-                          child: Text(
-                            a['catalog_enabled'] == true
-                                ? 'إيقاف الاستثناء'
-                                : 'تفعيل المنتجات',
-                          ),
-                        ),
-                        PopupMenuButton<String>(
+                      for (final account in accounts)
+                        AdminAccountCard(
+                          account: account,
                           enabled:
                               AdminRepository.writesEnabled && !ctrl.busy.value,
-                          tooltip: 'إدارة الحساب',
-                          icon: const Icon(Icons.manage_accounts_outlined),
-                          itemBuilder: (_) => [
-                            if (a['deleted_at'] != null)
-                              const PopupMenuItem(
-                                value: 'restore',
-                                child: Text('استعادة الحساب المؤرشف'),
-                              )
-                            else if (a['suspended_at'] != null)
-                              const PopupMenuItem(
-                                value: 'resume',
-                                child: Text('إلغاء إيقاف الحساب'),
-                              )
-                            else
-                              const PopupMenuItem(
-                                value: 'suspend',
-                                child: Text('إيقاف الحساب مؤقتًا'),
-                              ),
-                            if (active) ...const [
-                              PopupMenuDivider(),
-                              PopupMenuItem(
-                                value: 'cloud_month',
-                                child: Text('إضافة شهر كلاود — 50 جنيه'),
-                              ),
-                              PopupMenuItem(
-                                value: 'cloud_year',
-                                child: Text('إضافة سنة كلاود — 500 جنيه'),
-                              ),
-                              PopupMenuItem(
-                                value: 'cloud_stop',
-                                child: Text('إيقاف الكلاود'),
-                              ),
-                            ],
-                          ],
-                          onSelected: (operation) async {
+                          onAction: (operation) async {
                             final title = switch (operation) {
-                              'restore' => 'استعادة الحساب',
-                              'resume' => 'إلغاء الإيقاف',
+                              'cloud_month' => 'تفعيل / تجديد الكلاود لشهر',
+                              'cloud_year' => 'تفعيل / تجديد الكلاود لسنة',
+                              'cloud_stop' => 'إيقاف الكلاود',
+                              'catalog_on' => 'تفعيل المخزون',
+                              'catalog_off' => 'إيقاف المخزون',
+                              'printing_on' => 'تفعيل الطباعة',
+                              'printing_off' => 'إيقاف الطباعة',
                               'suspend' => 'إيقاف الحساب',
-                              'cloud_month' => 'إضافة شهر كلاود',
-                              'cloud_year' => 'إضافة سنة كلاود',
-                              _ => 'إيقاف الكلاود',
+                              'resume' => 'إعادة تشغيل الحساب',
+                              _ => 'استعادة الحساب',
                             };
                             if (!await confirm(
                               title,
-                              '$title للحساب ${a['email']}؟ لا تتغير بيانات دفتر الحساب. عند منح اشتراك تأكد من مراجعة الدفع أولًا.',
-                            )) {
+                              '$title للحساب ${account['email']}؟ تبقى بيانات الدفتر محفوظة.',
+                            ))
                               return;
-                            }
-                            if (operation.startsWith('cloud_')) {
-                              await ctrl.manageCloud(
-                                a['user_id'] as String,
-                                operation.substring(6),
+                            final uid = account['user_id'] as String;
+                            final ok = operation.startsWith('cloud_')
+                                ? await ctrl.manageCloud(
+                                    uid,
+                                    operation.substring(6),
+                                  )
+                                : operation.startsWith('catalog_')
+                                ? await ctrl.changeCatalog(
+                                    uid,
+                                    operation == 'catalog_on',
+                                  )
+                                : operation.startsWith('printing_')
+                                ? await ctrl.changePrinting(
+                                    uid,
+                                    operation == 'printing_on',
+                                  )
+                                : await ctrl.manageAccount(uid, operation);
+                            if (context.mounted && ok)
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('تم تحديث الخدمة'),
+                                ),
                               );
-                            } else {
-                              await ctrl.manageAccount(
-                                a['user_id'] as String,
-                                operation,
-                              );
-                            }
                           },
                         ),
-                      ];
-                    }).toList(),
+                    ],
                   )
                 : DesignTable(
                     minWidth: 1050,

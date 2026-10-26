@@ -43,6 +43,27 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <script>
+    let shortcutPrompt = null;
+    window.addEventListener('beforeinstallprompt', event => {
+      event.preventDefault();
+      shortcutPrompt = event;
+    });
+    window.addEventListener('appinstalled', () => { shortcutPrompt = null; });
+    window.elnotaInstallShortcut = async () => {
+      if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+        return 'الاختصار مثبت بالفعل على هذا الجهاز.';
+      }
+      if (!shortcutPrompt) {
+        return 'من قائمة المتصفح اختر إضافة إلى الشاشة الرئيسية أو تثبيت. على iPhone: Safari ← مشاركة ← إضافة إلى الشاشة الرئيسية.';
+      }
+      const prompt = shortcutPrompt;
+      shortcutPrompt = null;
+      await prompt.prompt();
+      const choice = await prompt.userChoice;
+      return choice.outcome === 'accepted' ? 'تم طلب تثبيت الاختصار.' : 'تم إلغاء تثبيت الاختصار.';
+    };
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

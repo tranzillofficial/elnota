@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:elnota/core/database/app_database.dart';
@@ -20,6 +21,14 @@ void main() {
       );
       expect(cloud.cloudAt(now), true);
       expect(cloud.catalogAt(now), true);
+      expect(
+        AccountAccess(
+          active: true,
+          cloudUntil: now.add(const Duration(days: 1)),
+          catalogOverride: false,
+        ).catalogAt(now),
+        false,
+      );
       expect(cloud.cloudAt(now.add(const Duration(days: 1))), false);
       const override = AccountAccess(active: true, catalogOverride: true);
       expect(override.catalogAt(now), true);
